@@ -5,7 +5,7 @@ from ..config import Config
 
 OLLAMA_BASE = Config.OLLAMA_BASE_URL
 MODEL = Config.OLLAMA_MODEL
-TIMEOUT = 30
+TIMEOUT = int(Config.OLLAMA_TIMEOUT or 120)
 
 
 def _build_material_rules(fields: list[dict]) -> str:

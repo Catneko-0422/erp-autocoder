@@ -32,3 +32,4 @@ class Config:
 
     OLLAMA_BASE_URL = os.getenv('OLLAMA_BASE_URL', '')
     OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', 'gemma4:latest')
+    OLLAMA_TIMEOUT = os.getenv('OLLAMA_TIMEOUT', '120')
