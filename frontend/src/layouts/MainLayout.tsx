@@ -20,6 +20,7 @@ export function MainLayout() {
           <nav className="flex items-center gap-1">
             <NavBtn to="/coding" label="料號編碼" />
             <NavBtn to="/part-numbers" label="已編碼料號" />
+            <NavBtn to="/bom-import" label="BOM 匯入" />
             {isRuleMaker && <NavBtn to="/rule-tree" label="規則樹編輯" />}
             {isAdmin && <NavBtn to="/admin/users" label="管理後台" />}
           </nav>

@@ -42,6 +42,7 @@ class RuleTreeNode(db.Model):
     description = db.Column(db.Text, nullable=True)
     field_type = db.Column(db.String(20), nullable=False, default='option')
     fixed_value = db.Column(db.String(50), nullable=True)
+    validation_rules = db.Column(db.JSON, nullable=True)
     sort_order = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
@@ -61,6 +62,7 @@ class RuleTreeNode(db.Model):
             'description': self.description,
             'field_type': self.field_type,
             'fixed_value': self.fixed_value,
+            'validation_rules': self.validation_rules,
             'sort_order': self.sort_order,
             'children': [c.to_dict() for c in self.children],
         }

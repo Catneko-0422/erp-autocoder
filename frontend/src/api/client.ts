@@ -81,6 +81,11 @@ export const ruleTreeApi = {
     client.delete(`/rule-tree/nodes/${id}`),
 };
 
+export const autoEncodeApi = {
+  predict: (data: Record<string, unknown>) =>
+    client.post('/auto-encode', data),
+};
+
 export const encodeApi = {
   encode: (data: Record<string, unknown>) =>
     client.post('/encode', data),
@@ -90,6 +95,26 @@ export const encodeApi = {
 
   list: (page = 1, perPage = 20) =>
     client.get(`/encode/list?page=${page}&per_page=${perPage}`),
+
+  fieldStats: (materialNodeId: string) =>
+    client.get(`/encode/field-stats?material_node_id=${materialNodeId}`),
+
+  bomImport: (data: Record<string, unknown>[]) =>
+    client.post('/encode/bom-import', data),
+
+  deletePartNumber: (id: string) =>
+    client.delete(`/encode/${id}`),
+
+  batchDeletePartNumber: (ids: string[]) =>
+    client.post('/encode/batch-delete', { ids }),
+
+  bomImportFile: (file: File) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    return client.post('/encode/bom-import', fd, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
 };
 
 export const adminApi = {

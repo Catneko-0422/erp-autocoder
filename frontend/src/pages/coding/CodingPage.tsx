@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, type FormEvent } from 'react';
-import { ruleTreeApi, encodeApi } from '../../api/client';
+import { ruleTreeApi, encodeApi, autoEncodeApi } from '../../api/client';
 import type { RuleTreeCategory, RuleTreeNode } from '../../types';
 
 function walkToFields(node: RuleTreeNode): { path: RuleTreeNode[]; fields: RuleTreeNode[] } {
@@ -44,10 +44,24 @@ function buildPartNo(
   return parts.join('');
 }
 
-function FieldOption({ field, selected, onSelect }: { field: RuleTreeNode; selected: string; onSelect: (id: string) => void }) {
+function confidenceColor(score: number) {
+  if (score >= 0.95) return 'bg-green-100 text-green-700 border-green-200';
+  if (score >= 0.8) return 'bg-yellow-50 text-yellow-600 border-yellow-200';
+  if (score >= 0.6) return 'bg-orange-50 text-orange-500 border-orange-200';
+  return 'bg-red-50 text-red-500 border-red-200';
+}
+
+function FieldOption({ field, selected, onSelect, confidence }: { field: RuleTreeNode; selected: string; onSelect: (id: string) => void; confidence?: number }) {
   return (
     <div className="mb-4">
-      <label className="block text-xs font-medium text-gray-500 mb-1.5">{field.label}</label>
+      <label className="block text-xs font-medium text-gray-500 mb-1.5 flex items-center gap-2">
+        {field.label}
+        {confidence !== undefined && (
+          <span className={`text-[10px] px-1.5 py-0.5 rounded border font-mono ${confidenceColor(confidence)}`}>
+            {Math.round(confidence * 100)}%
+          </span>
+        )}
+      </label>
       <div className="flex flex-wrap gap-1.5">
         {field.children.sort((a, b) => a.sort_order - b.sort_order).map((opt) => (
           <button
@@ -90,6 +104,9 @@ export function CodingPage() {
   const [matId, setMatId] = useState<string | null>(null);
   const [childMatId, setChildMatId] = useState<string | null>(null);
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
+  const [autoFilling, setAutoFilling] = useState(false);
+  const [autoError, setAutoError] = useState('');
+  const [fieldConfidences, setFieldConfidences] = useState<Record<string, number>>({});
   const [exists, setExists] = useState(false);
   const [result, setResult] = useState<string | null>(null);
 
@@ -163,7 +180,33 @@ export function CodingPage() {
   }, [partNo]);
 
   const handleFieldSelect = (fieldId: string, value: string) => {
+    setAutoError('');
     setFieldValues((prev) => ({ ...prev, [fieldId]: value }));
+    setFieldConfidences((prev) => ({ ...prev, [fieldId]: 0 }));
+  };
+
+  const handleAutoFill = async () => {
+    setAutoFilling(true);
+    setAutoError('');
+    try {
+      const { data } = await autoEncodeApi.predict({
+        material_node_id: (activeNode ?? matNode)?.id,
+        part_type: partType,
+        description,
+        mfg_part: mfgPart,
+        vendor_pn: vendorPn,
+        item_text: itemText,
+      });
+      if (data.data?.field_predictions) {
+        setFieldValues((prev) => ({ ...prev, ...data.data.field_predictions }));
+        setFieldConfidences(data.data.field_confidences || {});
+      }
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'AI填充失敗';
+      setAutoError(msg);
+    } finally {
+      setAutoFilling(false);
+    }
   };
 
   const handleSelectMaterial = (id: string) => {
@@ -183,6 +226,7 @@ export function CodingPage() {
     setMatId(null);
     setChildMatId(null);
     setFieldValues({});
+    setFieldConfidences({});
     setResult(null);
   };
 
@@ -190,6 +234,7 @@ export function CodingPage() {
     if (childMatId) {
       setChildMatId(null);
       setFieldValues({});
+      setFieldConfidences({});
       setResult(null);
     } else {
       handleClear();
@@ -208,6 +253,8 @@ export function CodingPage() {
         mfg_part: mfgPart || null,
         vendor_pn: vendorPn || null,
         item_text: itemText || null,
+        material_node_id: (activeNode ?? matNode)?.id || null,
+        encoding_fields: Object.keys(fieldValues).length > 0 ? fieldValues : null,
       });
       setResult(data.data.part_no);
       setMatId(null);
@@ -310,15 +357,41 @@ export function CodingPage() {
 
           <PartNoPreview partNo={partNo} materialLabel={pathNodes.map((n) => n.label).join(' / ')} />
 
+          <div className="flex flex-col items-end gap-2 mb-3">
+            {autoError && <div className="text-xs text-red-500 bg-red-50 px-3 py-1.5 rounded-lg border border-red-200">{autoError}</div>}
+            <button
+              onClick={handleAutoFill}
+              disabled={autoFilling}
+              className="px-3 py-1.5 text-xs font-medium bg-gradient-to-r from-purple-600 to-blue-500 text-white rounded-lg hover:from-purple-700 hover:to-blue-600 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center gap-1.5 shadow-sm"
+            >
+              {autoFilling ? (
+                <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              )}
+              {autoFilling ? 'AI分析中...' : 'AI Auto Fill'}
+            </button>
+          </div>
+
           <div className="bg-white rounded-xl border border-gray-200 p-5 mb-4">
             {fields.map((f) => {
               if (f.field_type === 'option' || f.field_type === 'options') {
-                return <FieldOption key={f.id} field={f} selected={fieldValues[f.id] || ''} onSelect={(cid) => handleFieldSelect(f.id, cid)} />;
+                return <FieldOption key={f.id} field={f} selected={fieldValues[f.id] || ''} onSelect={(cid) => handleFieldSelect(f.id, cid)} confidence={fieldConfidences[f.id]} />;
               }
               if (f.field_type === 'input') {
+                const conf = fieldConfidences[f.id];
                 return (
                   <div key={f.id} className="mb-4">
-                    <label className="block text-xs font-medium text-gray-500 mb-1.5">{f.label}</label>
+                    <label className="block text-xs font-medium text-gray-500 mb-1.5 flex items-center gap-2">
+                      {f.label}
+                      {conf !== undefined && (
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded border font-mono ${confidenceColor(conf)}`}>
+                          {Math.round(conf * 100)}%
+                        </span>
+                      )}
+                    </label>
                     <input
                       className="w-full px-3 py-2 text-sm font-mono border border-gray-300 rounded-lg outline-none focus:border-blue-500"
                       value={fieldValues[f.id] || ''}

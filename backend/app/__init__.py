@@ -18,11 +18,13 @@ def create_app(config_class=Config):
     from .api.admin.routes import admin_bp
     from .api.rule_tree.routes import rule_tree_bp
     from .api.encode.routes import encode_bp
+    from .api.auto_encode.routes import auto_encode_bp
 
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(admin_bp, url_prefix='/api/admin')
     app.register_blueprint(rule_tree_bp, url_prefix='/api/rule-tree')
     app.register_blueprint(encode_bp, url_prefix='/api/encode')
+    app.register_blueprint(auto_encode_bp, url_prefix='/api/auto-encode')
 
     from .cli import seed_command
     app.cli.add_command(seed_command)

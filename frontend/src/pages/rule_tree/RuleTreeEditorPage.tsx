@@ -212,7 +212,7 @@ export function RuleTreeEditorPage() {
     const tempId = prev.id ? '' : '__temp__' + Date.now();
     const optimisticNode: RuleTreeNode = prev.id
       ? (null as unknown as RuleTreeNode)
-      : { id: tempId, category_id: prev.category_id, parent_id: prev.parent_id, label: prev.label, code_segment: prev.code_segment, description: prev.description, field_type: prev.field_type as RuleTreeNode['field_type'], fixed_value: prev.fixed_value, sort_order: prev.sort_order, children: [] };
+      : { id: tempId, category_id: prev.category_id, parent_id: prev.parent_id, label: prev.label, code_segment: prev.code_segment, description: prev.description, field_type: prev.field_type as RuleTreeNode['field_type'], fixed_value: prev.fixed_value, validation_rules: null, sort_order: prev.sort_order, children: [] };
 
     setCategories((prevCats) =>
       prevCats.map((c) => {

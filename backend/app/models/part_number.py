@@ -16,6 +16,8 @@ class PartNumber(db.Model):
     mfg_part = db.Column(db.String(100), nullable=True)
     vendor_pn = db.Column(db.String(100), nullable=True)
     item_text = db.Column(db.Text, nullable=True)
+    material_node_id = db.Column(db.String(100), nullable=True, index=True)
+    encoding_fields = db.Column(db.JSON, nullable=True)
     created_by = db.Column(UUID(as_uuid=True), db.ForeignKey('users.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
@@ -32,6 +34,8 @@ class PartNumber(db.Model):
             'mfg_part': self.mfg_part,
             'vendor_pn': self.vendor_pn,
             'item_text': self.item_text,
+            'material_node_id': self.material_node_id,
+            'encoding_fields': self.encoding_fields,
             'created_by': str(self.created_by) if self.created_by else None,
             'created_at': self.created_at.isoformat(),
         }

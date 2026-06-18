@@ -40,6 +40,7 @@ export interface RuleTreeNode {
   description: string | null
   field_type: 'option' | 'options' | 'input' | 'fixed'
   fixed_value: string | null
+  validation_rules: Record<string, unknown> | null
   sort_order: number
   children: RuleTreeNode[]
 }
@@ -65,6 +66,32 @@ export interface PartNumber {
   item_text: string | null
   created_by: string | null
   created_at: string
+}
+
+export interface AutoEncodeResponse {
+  field_predictions: Record<string, string>
+  field_confidences: Record<string, number>
+}
+
+export interface FieldStats {
+  label: string
+  field_type: string
+  total: number
+  frequencies: Array<{ value: string; count: number; percentage: number }>
+}
+
+export interface BomImportRow {
+  row: number
+  part_no: string
+  status: string
+  reason?: string
+}
+
+export interface BomImportResponse {
+  imported: number
+  skipped: number
+  errors: string[]
+  results: BomImportRow[]
 }
 
 export interface AuditLogEntry {

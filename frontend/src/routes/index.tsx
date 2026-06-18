@@ -17,6 +17,7 @@ import { AuditLogsPage } from '../pages/admin/AuditLogsPage';
 import { RuleTreeEditorPage } from '../pages/rule_tree/RuleTreeEditorPage';
 import { CodingPage } from '../pages/coding/CodingPage';
 import { PartNumbersPage } from '../pages/coding/PartNumbersPage';
+import { BomImportPage } from '../pages/bom/BomImportPage';
 
 export function AppRoutes() {
   return (
@@ -35,6 +36,7 @@ export function AppRoutes() {
         <Route index element={<DashboardPage />} />
         <Route path="coding" element={<CodingPage />} />
         <Route path="part-numbers" element={<PartNumbersPage />} />
+        <Route path="bom-import" element={<BomImportPage />} />
         <Route
           path="rule-tree"
           element={
